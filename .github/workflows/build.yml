@@ -1,0 +1,80 @@
+name: Build PQC Analysis Tool
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Create virtual environment and install dependencies
+        run: |
+          python -m venv .venv
+          .venv\Scripts\python -m pip install --upgrade pip
+          .venv\Scripts\pip install -r requirements.txt
+
+      - name: Build with PyInstaller
+        run: |
+          .venv\Scripts\pyinstaller --noconfirm --clean --onedir --name "PQC数据分析工具" launcher.py
+
+      - name: Install 7zip
+        run: choco install 7zip -y
+
+      - name: Compress output directory
+        run: |
+          Set-Location dist
+          7z a -t7z "..\PQC数据分析工具_windows_x64.7z" "PQC数据分析工具"
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PQC数据分析工具_windows_x64
+          path: PQC数据分析工具_windows_x64.7z
+          retention-days: 30
+
+  build-macos:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Create virtual environment and install dependencies
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/pip install -r requirements.txt
+
+      - name: Build with PyInstaller
+        run: |
+          .venv/bin/pyinstaller --noconfirm --clean --onedir --name "PQC数据分析工具" launcher.py
+
+      - name: Install p7zip
+        run: brew install p7zip
+
+      - name: Compress output directory
+        run: |
+          cd dist
+          7z a -t7z "../PQC数据分析工具_macos_arm64.7z" "PQC数据分析工具"
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PQC数据分析工具_macos_arm64
+          path: PQC数据分析工具_macos_arm64.7z
+          retention-days: 30
